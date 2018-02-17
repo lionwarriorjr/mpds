@@ -126,9 +126,9 @@ max(count_assessments)
 # minimum number of mPDS assessments in clinic cohort 
 min(count_assessments)
 # mean intraday change in mPDS (as measurement of daily severity fluctuations) in clinic cohort
-mean(intraday) #13.87762
+mean(intraday)
 # standard deviation in change in mPDS (as measurement of daily severity fluctuations) in clinic cohort
-sd(intraday) #10.33258
+sd(intraday)
 
 ############################################################################################################
 # Run Wilcoxon signed-rank test to assess whether mPDS detects a decrease in severity
