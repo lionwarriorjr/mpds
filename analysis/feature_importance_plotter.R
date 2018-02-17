@@ -29,6 +29,7 @@ require(gtools)
 # Included here is code to visualize feature importance
 # Note that the data in this file (sorted_weight.csv) is out of date
 # Refer to "Linear DSSL-v1-tap2-robust-10fcv-pt-dssv2-mPDS-short.ipynb" for up-to-date results
+# with this plotting code
 ############################################################################################################
 
 # read sorted weights on features from learned model
