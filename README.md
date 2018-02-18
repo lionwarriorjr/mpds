@@ -4,7 +4,7 @@ Mobile Parkinson Disease Score
 ## feature_extraction
 This folder contains the Matlab feature library to extract Parkinson disease related features from raw data samples collected from HopkinsPD Android Application.
 
-## data_preparation
+## mPDS
 This folder contains the Jupyter Notebook to load feature files into a Postgres database called HopkinsPD. The tables in HopkinsPD database will be served for mPDS training.
 
 ## dssl
