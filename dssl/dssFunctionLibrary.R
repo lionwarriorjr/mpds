@@ -1,6 +1,15 @@
 #
 # this is the library of DSS functions
 #
+# If you use this code, please cite:
+# Dyagilev, K. and Saria, S., 2016. Learning (predictive) risk scores in the
+# presence of censoring due to interventions. Machine Learning, 102(3),
+# pp.323-348.
+# Dyagilev, K. and Saria, S., 2015. Learning a severity score for sepsis:
+# A novel approach based on clinical comparisons. In AMIA Annual Symposium
+# Proceedings (Vol. 2015, p. 1890). American Medical Informatics Association.
+
+
 library(pracma)
 library(glmnet)
 library(dplyr)
