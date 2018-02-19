@@ -1,6 +1,23 @@
+% @Author: Andong Zhan
+% @Date:   2018-02-18 13:40:58
+% @Last Modified by:   Andong Zhan
+% @Last Modified time: 2018-02-18 14:08:43
+% (c) 2018 Max Little. If you use this code, please cite:
+% Andong Zhan, et al. "High Frequency Remote Monitoring of Parkinson's Disease
+%  via Smartphone: Platform Overview and Medication Response Detection."
+% arXiv preprint arXiv:1601.00960 (2016).
+
 function [header, feature] = extractTapTestV2( data )
-%EXTRACTACCELTESTV2 Summary of this function goes here
-%   Detailed explanation goes here
+% Useage:
+% [header, feature] = extractTapTestV2( data )
+% Inputs
+%    data       - input signal: a matrix where each row is a screen touch
+%                 sample. The columns are time, x, and y coordinates. <x, y>
+%                 coordinates are the position of touches on the phoen screen.
+%
+% Outputs:
+%    header     - the names of the acceleration features
+%    feature    - the feature matrix
 [nr, nc] = size(data);
 tsp = data(:,1) - data(1,1);
 x = data(:,2);

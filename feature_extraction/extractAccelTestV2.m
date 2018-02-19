@@ -1,5 +1,24 @@
-function [header, feature] = extractAccelTestV2( data )
+% @Author: Andong Zhan
+% @Date:   2018-02-18 13:40:58
+% @Last Modified by:   Andong Zhan
+% @Last Modified time: 2018-02-18 14:03:00
+% (c) 2018 Max Little. If you use this code, please cite:
+% Andong Zhan, et al. "High Frequency Remote Monitoring of Parkinson's Disease
+%  via Smartphone: Platform Overview and Medication Response Detection."
+% arXiv preprint arXiv:1601.00960 (2016).
 
+function [header, feature] = extractAccelTestV2( data )
+% Useage:
+% [header, feature] = extractAccelTestV2( data )
+% Inputs
+%    data       - input signal: a matrix where each row is a accleration
+%                 sample. The columns are time, x, y, z. time is when the
+%                 sample recorded and <x, y, z> are the three dimension
+%                 acceleration.
+% Outputs:
+%    header     - the names of the acceleration features
+%    feature    - the feature matrix
+%
 [nr, nc] = size(data);
 header = {};
 % remove 1st and last quartor

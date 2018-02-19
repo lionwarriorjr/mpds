@@ -1,8 +1,22 @@
-function [header, feature] = extractAudioTestV1( data, fs )
-%EXTRACTACCELTESTV1 Summary of this function goes here
-%   Detailed explanation goes here
+% @Author: Andong Zhan
+% @Date:   2018-02-18 13:40:58
+% @Last Modified by:   Andong Zhan
+% @Last Modified time: 2018-02-18 14:04:10
+% (c) 2018 Max Little. If you use this code, please cite:
+% Andong Zhan, et al. "High Frequency Remote Monitoring of Parkinson's Disease
+%  via Smartphone: Platform Overview and Medication Response Detection."
+% arXiv preprint arXiv:1601.00960 (2016).
 
-% divide data into frames
+function [header, feature] = extractAudioTestV1( data, fs )
+% Useage:
+% [header, feature] = extractAudioTestV1( data )
+% Inputs
+%    data       - input signal: audio signal.
+%    fs         - audio frequency: e.g., 44100
+% Outputs:
+%    header     - the names of the acceleration features
+%    feature    - the feature matrix
+%
 
 
 % set frame size to 0.5 second

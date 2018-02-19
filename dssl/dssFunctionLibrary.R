@@ -1,6 +1,29 @@
 #
-# this is the library of DSS functions
+# Library of DSSL functions (used in learning the model)
 #
+# If you use this code, please cite:
+# Dyagilev, K. and Saria, S., 2016. Learning (predictive) risk scores in the
+# presence of censoring due to interventions. Machine Learning, 102(3),
+# pp.323-348.
+# Dyagilev, K. and Saria, S., 2015. Learning a severity score for sepsis:
+# A novel approach based on clinical comparisons. In AMIA Annual Symposium
+# Proceedings (Vol. 2015, p. 1890). American Medical Informatics Association.
+
+# To train your model, see dssTrain.Linear <- function(dataMat_interpolated, orderingPairs, smoothnessPairs,
+#                                                      timeVec, LambdaO_list, LambdaS_list, save_fn_template, doParallel = 1)
+# to run DSSL on your data. Note that dataMat_interpolated is the design matrix, orderingPairs/smoothnessPairs are data frames
+# that specify the order DSSL leverages to rank instances during training (i.e. before medication vs. after medication).
+# To be concrete, thet will take the form of:
+#       OrderPairs <- data.frame(onIdx = seq(1, nRow, by = 2), offIdx = seq(2, nRow, by = 2))
+#       SmoothnessPairs <- data.frame(onIdx = seq(1, nRow, by = 2), offIdx = seq(2, nRow, by = 2))
+# where onIDx and offIdx specify the rank order with respect to the row indices of the design matrix. This relates to how
+# learning procedure estimates its model parameters, since DSSL exploits example pairs of times that
+# are rank ordered such that the severity of symptoms at time t_i is less than that at time t_j
+# TimeVector can simply be set to TimeVector <- TimeVector[1:nRow]
+# Lambda0_list and LambdaS_list specify DSSL's regularization parameters (scalar constants)
+# If using K-fold validation for training, should consider varying Lambda0_list/LambdaS_list by grid search
+
+
 library(pracma)
 library(glmnet)
 library(dplyr)
@@ -12,15 +35,7 @@ library(grid)
 library(rpart)
 source("mimicUsefulFunction.R")
 
-# for (package in c('<package1>', '<package2>')) {
-#   if (!(require(package, character.only=T, quietly=T))) {
-#     install.packages(package)
-#     library(package, character.only=T)
-#   }
-# }
 
-
-# A = ii1; B = ii2; N = numOfPoints;
 subsampleSetOfPossiblePairs<- function(A,B, N){
   if(as.double(as.numeric(length(A))*as.numeric(length(B)))<=(10*N)){
     tmp <- expand.grid(A,B);
@@ -40,7 +55,6 @@ subsampleSetOfPossiblePairs<- function(A,B, N){
 
 #tmp_pairs_df <- generateBalancedPairs(patD, numberOfIntraPairsPerPatientPerPair);
 # inp_df = patD; numOfPoints = numberOfIntraPairsPerPatientPerPair; min_ht = 2*60
-
 generateBalancedPairs <- function(inp_df, numOfPoints, min_ht = 2*60){
 
   # Extract the vectors
@@ -58,9 +72,6 @@ generateBalancedPairs <- function(inp_df, numOfPoints, min_ht = 2*60){
   stage_pairs = stage_pairs[cond,]
   names(stage_pairs) <- c("high", "low")
   numberOfPairs = sum(cond)
-
-
-
 
   # generate pairs for each combination of stages
   for (cntP in 1:numberOfPairs){
@@ -142,7 +153,6 @@ dssGenerateClinicalComparisons <- function(
   }
   all_pairs_df = rbind_all(all_pairs_list)
 
-
   # now get the inter-patient clinical comparisons
   if(is.na(numberOfInterPairsPerPair)){
     numOfStages = length(unique(levelsVec));
@@ -159,9 +169,7 @@ dssGenerateClinicalComparisons <- function(
   all_pairs_df <- unique(rbind(all_pairs_df, tmp_pairs_df))
 
   all_pairs_df
-
 }
-
 
 
 dssGenerateSmoothnessPairs <- function(
@@ -243,11 +251,11 @@ trainSmoothDSS_quadSmoothness_diff<-
   invTVecS <- 1/diffTVecS
 
   w_init = rep(1,dimOfFeatures)
+  
   # x = w_init
   # this function calculates target value for parameter x
   # as an attribute to its value it attaches gradient and hessian
   fgh <- function(x, ord){
-
 
     # get difference times parameter vector
     rankO = diffMatO%*%x;
@@ -256,8 +264,6 @@ trainSmoothDSS_quadSmoothness_diff<-
     indHuberZ3_O = marginO > h_v;
     indHuberZ2_O = marginO <= h_v & marginO >= -h_v;
     penaltyO <- loss_fun_vec(marginO, indHuberZ2_O, indHuberZ3_O)
-
-
 
     rankS = diffMatS%*%x;
     #print(rankS)
@@ -272,11 +278,8 @@ trainSmoothDSS_quadSmoothness_diff<-
     # value calculation
     res <- Creg0*(1/2)*crossprod(x,x) + Creg1_n*sum(penaltyO) + Creg2_n*sum(penaltyS)
     res <- res[1]
-    #print(res)
-    #
+    
     # calculation of the gradient
-    #
-
     # regularization term
     gW = x;
 
@@ -311,12 +314,9 @@ trainSmoothDSS_quadSmoothness_diff<-
       featDim = length(x)
       HW = diag(1,featDim)
 
-
       z2Idx_O  = which(indHuberZ2_O)
       z2Idx_SP  = which(indHuberZ2_SP)
       z2Idx_SN  = which(indHuberZ2_SN)
-
-
 
       HO <- matrix(data = 0, ncol = featDim, nrow = featDim);
       for (cntP in z2Idx_O){
@@ -338,8 +338,6 @@ trainSmoothDSS_quadSmoothness_diff<-
         HSN <- HSN + curr_d%o%curr_d;
       }
       HSN <- HSN / (2*h_v)
-
-
       hss <- Creg0*HW + Creg1_n*HO + Creg2_n*(HSP + HSN)
     }
     if(ord >= 1){
@@ -348,12 +346,9 @@ trainSmoothDSS_quadSmoothness_diff<-
     if(ord >= 2){
       attr(res,"hessian") <- hss
     }
-    #
 
     res
   }
-
-
 
   # Rprof("out.out")
   #w <- nlm(f, w_init, iterlim = 40, print.level = 0, check.analyticals = TRUE)
@@ -369,16 +364,9 @@ trainSmoothDSS_quadSmoothness_diff<-
     sum()
     w0
   }
-  #
-  #
-  #
-  #Rprof(NULL)
-  #summaryRprof("out.out")
 
   w
-
 }
-
 
 
 calculateDiffMatrix <- function(dataMat, trainPairs){
@@ -425,7 +413,6 @@ dssTrain.Linear <- function(dataMat_interpolated, orderingPairs, smoothnessPairs
   numberOfPairs = dim(orderingPairs)[1];
   muO = rep(1, times = numberOfPairs)
 
-
   #for(cntP in seq(along = LambdaO_list)){
   if(doParallel){
     w_list <- foreach(cntP = seq(along = LambdaO_list))%dopar%{
@@ -459,9 +446,9 @@ dssTrain.Linear <- function(dataMat_interpolated, orderingPairs, smoothnessPairs
       }
     }
   }
+ 
   # return the list
   w_list
-
 }
 
 
@@ -585,12 +572,10 @@ dssTrain.NonLinear <-
       res
     }
 
-
     # calculate matrices of differences and time deltas
     diffTVecS <- abs(calculateDiffVec(hospTimeS, pairsS))
     invDiffTVecS = 1/diffTVecS;
     sqInvDiffTVecS = (invDiffTVecS)^2
-
 
     # x = w_init
     # this function returns a list  of two elements
@@ -612,7 +597,6 @@ dssTrain.NonLinear <-
       indHuberZ2_O = marginO <= h_v & marginO >= -h_v;
       penaltyO <- loss_fun_vec(marginO, indHuberZ2_O, indHuberZ3_O)
 
-
       # get differences times parameter vector
       rankS = calculateDiffVec(rnk, pairsS);
       penaltyS = (rankS)^2*sqInvDiffTVecS
@@ -632,7 +616,6 @@ dssTrain.NonLinear <-
       derivO <- loss_deriv_vec(marginO, indHuberZ2_O, indHuberZ3_O)
       derivS <- 2*rankS*sqInvDiffTVecS
 
-
       # Fast calculation of per-entry derivative
       gradO = rep(0, numOfPatterns)
       i_com <- tapply(derivO, pairsO$onIdx, FUN = sum)
@@ -651,10 +634,6 @@ dssTrain.NonLinear <-
       gradS[j] = gradS[j] - j_com
 
       res$grad = Creg1_n*gradO + Creg2_n*gradS;
-
-      #
-      #
-
       res
     }
 
@@ -663,8 +642,6 @@ dssTrain.NonLinear <-
 
       # init return value
       resList = list(nextV = NA, nextR = NA, conv = 1, a = NA);
-
-      #
       curr_a <- aMax;
       m = crossprod(descVec, grad);
 
@@ -683,7 +660,6 @@ dssTrain.NonLinear <-
       nextR <- currRnk + linSearchDamp*curr_a*descVec;
       nextV <- fg(rnk = nextR, isGrad = 0); nextV <- nextV$val
 
-
       # prepare and return the value
       resList$nextR = nextR;
       resList$nextV = nextV;
@@ -700,7 +676,6 @@ dssTrain.NonLinear <-
     #     isTrain[uniqueTrainEntries] = 1;
     #     numOfTrainPoints = sum(isTrain)
     rnk_init = r_init;
-    #
     a_list = list(); # list of weights
     t_list = list(); # list of trees
     currRnk <- rnk_init;
@@ -708,7 +683,6 @@ dssTrain.NonLinear <-
     dataMatWithRnk = cbind(dataMat, desc = -grad)
 
     # control parameters for the tree
-
     if(0){
       rcontrol <- rpart.control(minsplit = 2, cp = 1e-8,
                                 maxcompete = 0, maxsurrogate = 0, usesurrogate = 0, xval = 0,
@@ -721,6 +695,7 @@ dssTrain.NonLinear <-
 
     numTree_max = maxTree;
     currV <- 0;
+    
     # repeat until convergence or until maximal number of trees reached
     repeat{
 
@@ -729,11 +704,13 @@ dssTrain.NonLinear <-
       vg_list <- fg(currRnk, isGrad = 1)
       Sys.time() - t1
       cat("Gradient direction found in ", Sys.time() - t1, "\n")
+      
       # update the target value for the regression tree
       nof <- ncol(dataMatWithRnk)
       dataMatWithRnk$desc <- -vg_list$grad;
 
       t2 <- Sys.time()
+      
       # fit a tree to the direction of gradient descend, only on training points
       currTree <- rpart( desc ~ . ,
                          data = dataMatWithRnk,
@@ -756,6 +733,7 @@ dssTrain.NonLinear <-
       currV <- v;
 
       if(resList$conv){
+        
         # a step was found
         nextV <- resList$nextV
         nextR <- resList$nextR
@@ -814,11 +792,9 @@ dss.NL.calculateDSS <- function(dataMat, res_forest, return_all){
     tmp
   }
 
-
   # return the result
   res_rnk
 }
-
 
 
 dss.NL.calculateDSS.Serial <- function(dataMat, res_forest, return_all){
@@ -845,7 +821,6 @@ dss.NL.calculateDSS.Serial <- function(dataMat, res_forest, return_all){
     cat("Tree", cntT,"out of", numOfTrees, "processed in", dt, "mins\n")
   }
 
-
   # return the result
   res_list = list(res_rnk = res_rnk, res_rnk_all = res_rnk_all)
   res_list
@@ -863,17 +838,14 @@ dss.NL.calculateDSS.Serial.ThreeVectors <- function(dataMat, res_forest, validCC
   soa_maximum = -1;
   soa_maximizer = -1;
 
-
   for(cntT in 1:numOfTrees){
     t1 <- Sys.time();
     tmp <- a_list[[cntT]]*predict(t_list[[cntT]], dataMat, type = "vector")
     res_rnk <- res_rnk + tmp
 
-
     if(cntT == 1){
       res_rnk_all[,1] <- res_rnk
     }
-
 
     # calculate the soa
     cc_diff = calculateDiffVec(res_rnk, validCC_df);
@@ -883,7 +855,6 @@ dss.NL.calculateDSS.Serial.ThreeVectors <- function(dataMat, res_forest, validCC
       soa_maximizer = cntT
       soa_maximum = curr_soa
     }
-
 
     if(cntT == numOfTrees){
       res_rnk_all[,3] = res_rnk
@@ -898,9 +869,6 @@ dss.NL.calculateDSS.Serial.ThreeVectors <- function(dataMat, res_forest, validCC
   res_list = list(res_rnk = res_rnk, res_rnk_all = res_rnk_all, soa_maximizer = soa_maximizer, soa_maximum = soa_maximum)
   res_list
 }
-
-
-
 
 
 #
@@ -968,9 +936,7 @@ extractDSSDerivedFeatures <- function(patientIDVec, timeVec, dssRanks)
   dss_derived_feat <- rbind_all(res_list)
 
   dss_derived_feat
-
 }
-
 
 
 #
@@ -997,15 +963,11 @@ dss.Aux.TrainLRFromFeaturesToAdverseEvent <- function(ids, patternsMat, entrie_l
   dev_idx = which(ids %in% dev_ids)
   valid_idx = which(ids %in% valid_ids)
 
-
   # train LR with L1-regularization (alpha = 1)
   mdl <- glmnet(x = patternsMat[dev_idx, ], entrie_level_label[dev_idx], family = "binomial",
                 alpha = 0, lambda = lambda_list, intercept = TRUE)
 
-  #
   # preliminary calculations for the validation set
-  #
-
   uniq_usr_valid = unique(ids[valid_idx]); # unique users in validation set, in the same order as it ragged arrays
 
   mtch_idx = match(uniq_usr_valid, user_level_label$id) # fetch -1,0,1 labels for each user
@@ -1034,7 +996,6 @@ dss.Aux.TrainLRFromFeaturesToAdverseEvent <- function(ids, patternsMat, entrie_l
   res_list <- list(mdl = mdl, best_lambda = best_lambda,
                    best_auc = best_auc, AUCs_valid = dssRanks_valid_auc_vec, best_idx = mx_idx)
   res_list
-
 }
 
 
@@ -1044,10 +1005,8 @@ trainLR.fromDSSAndDerivedFeaturesToAdverseEvent <- function(dssAndFeatures_obj, 
   # drop "id" and "ht" from the pattern and turn the result into a matrix
   patternsMat = as.matrix(dssAndFeatures_obj[,-c(1,2)])
   ids <- dssAndFeatures_obj$id;
-
   res_list <- dss.Aux.TrainLRFromFeaturesToAdverseEvent(ids, patternsMat,entrie_level_label, dev_ids, valid_ids, user_level_label,lambda_list)
   res_list
-
 }
 
 #
@@ -1098,7 +1057,6 @@ dssTrendPriorToSepticShock <- function(ids, time_to_event, score, test_ids,
   std_up = std(res_df$mean_dss_0_6 - res_df$mean_dss_6_12)
   std_acc = std(res_df$mean_dss_0_6 + res_df$mean_dss_12_18 - 2*res_df$mean_dss_6_12)
 
-
   sum_list = list();
   sum_list$mean_0_6 = mean(res_df$mean_dss_0_6);
   sum_list$mean_6_12 = mean(res_df$mean_dss_6_12);
@@ -1106,11 +1064,10 @@ dssTrendPriorToSepticShock <- function(ids, time_to_event, score, test_ids,
   sum_list$delta_6_12 = sum_list$mean_0_6 - sum_list$mean_6_12;
   sum_list$delta_12_18 = sum_list$mean_6_12 - sum_list$mean_12_18;
   sum_list$delta_6_18 = sum_list$mean_0_6 - sum_list$mean_12_18;
-
   sum_list$p_trend_up = t.test(x = mean_dss_1, y = mean_dss_2, paired = T)$p.value
   sum_list$p_accel = t.test(x = mean_dss_1 -mean_dss_2,
                             y = mean_dss_2 - mean_dss_3, paired = T)$p.value
-
+  
   sum_list$mean_delta1_norm_crossPat = mean_delta_2from1_norm;
   sum_list$mean_delta2_norm_crossPat = sum_list$delta_12_18/typicalScoreRange;
   sum_list$mean_delta3_norm_crossPat = sum_list$delta_6_18/typicalScoreRange;
@@ -1135,14 +1092,8 @@ dssTrendPriorToSepticShock <- function(ids, time_to_event, score, test_ids,
   print(obj)
   dev.off()
 
-
   list(sum_list = sum_list, res_df = res_df)
-
-
 }
-
-
-
 
 
 ####################################################################
@@ -1159,8 +1110,6 @@ dssTrain.CalcOptimalDSSForTrainData <-
     numOfPairsO = dim(pairsO_full)[1];
     numOfPairsS = dim(pairsS_full)[1];
 
-
-
     # create a local copy of the reduced data matrix that contains only
     # entries that appear in in one of the pairs
     uniqEntries = unique(c(pairsO_full$onIdx, pairsO_full$offIdx, pairsS_full$onIdx, pairsS_full$offIdx))
@@ -1176,15 +1125,10 @@ dssTrain.CalcOptimalDSSForTrainData <-
     dimOfFeatures = ncol(dataMat);
     numOfPatterns = nrow(dataMat);
 
-
-
-
     # rescaling Creg1 and Creg2
     # for GBRT approach, C1 always equals 1
     Creg1_n = 1/numOfPairsO
     Creg2_n = Creg2/numOfPairsS
-
-
 
     # Huber loss function that allows vector input
     # Here, margin is $mu - f_val$
@@ -1232,7 +1176,6 @@ dssTrain.CalcOptimalDSSForTrainData <-
     invDiffTVecS = 1/diffTVecS;
     sqInvDiffTVecS = (invDiffTVecS)^2
 
-
     # x = w_init
     # this function returns a list  of two elements
     # the first element is "val" - the value of the cost function
@@ -1255,7 +1198,6 @@ dssTrain.CalcOptimalDSSForTrainData <-
       indHuberZ2_O = marginO <= h_v & marginO >= -h_v;
       penaltyO <- loss_fun_vec(marginO, indHuberZ2_O, indHuberZ3_O)
 
-
       # get differences times parameter vector
       rankS = calculateDiffVec(rnk, pairsS);
       penaltyS = (rankS)^2*sqInvDiffTVecS
@@ -1274,7 +1216,6 @@ dssTrain.CalcOptimalDSSForTrainData <-
       #
       derivO <- loss_deriv_vec(marginO, indHuberZ2_O, indHuberZ3_O)
       derivS <- 2*rankS*sqInvDiffTVecS
-
 
       # Fast calculation of per-entry derivative
       gradO = rep(0, numOfPatterns)
@@ -1298,19 +1239,14 @@ dssTrain.CalcOptimalDSSForTrainData <-
       res
     }
 
-
-
     cat("Inside training function\n")
     rnk_init = r_init;
-
 
     # perform linear search
     dssGBRTLinearSearch <- function(v, currRnk, grad, descVec, aMax, aMin, tau, c, linSearchDamp){
 
       # init return value
       resList = list(nextV = NA, nextR = NA, conv = 1, a = NA);
-
-      #
       curr_a <- aMax;
       m = crossprod(descVec, grad);
 
@@ -1321,6 +1257,7 @@ dssTrain.CalcOptimalDSSForTrainData <-
         if(nextV <= v + curr_a*m*c | curr_a <=aMin){
           break;
         }
+        
         # take a smaller step
         curr_a <- curr_a*tau;
       }
@@ -1329,14 +1266,12 @@ dssTrain.CalcOptimalDSSForTrainData <-
       nextR <- currRnk + linSearchDamp*curr_a*descVec;
       nextV <- fg(rnk = nextR, isGrad = 0); nextV <- nextV$val
 
-
       # prepare and return the value
       resList$nextR = nextR;
       resList$nextV = nextV;
       resList$conv = ifelse(curr_a>aMin, 1, 0)
       resList$a = curr_a*linSearchDamp;
       resList
-
     }
 
     cat("Inside training function\n")
@@ -1365,6 +1300,7 @@ dssTrain.CalcOptimalDSSForTrainData <-
       currV <- v;
 
       if(resList$conv){
+        
         # a step was found
         nextV <- resList$nextV
         nextR <- resList$nextR
@@ -1394,29 +1330,10 @@ dssTrain.CalcOptimalDSSForTrainData <-
       currV <- nextV;
     }
 
-
-
-
-
-
-
-    #
-    # Here
-    #
-
-    #r_opt <- nlm(fg, isGrad = 0, r_init, print.level = 2, check.analyticals = TRUE, iterlim = 10, stepmax = 10000, steptol = 1e-8, hessian = FALSE)
-
-#     f <- function(x){cat("Function f called\n"); tmp <- fg(x, 0); tmp}
-#     g <- function(x){tmp <- fg(x, 1); cat("Function g called; value = ", tmp[1], "\n");tmp2 <- attr(tmp, "gradient"); tmp2}
-#
-#     r_opt <- optim(r_init, f, g, method = c("CG"), hessian = FALSE, control = list(trace = 0, maxit = 2))
-
     opt_scoring <- list(trainData = dataMat, dss_opt = currRnk, pairsO = pairsO,
                         pairsS = pairsS, uniqEntries = uniqEntries)
     opt_scoring
-
-  }
-
+}
 
 
 ###################################################################################
@@ -1431,8 +1348,6 @@ dssTrain.CalcOptimalDSSForTrainData <-
 ###################################################################################
 ###################################################################################
 ###################################################################################
-
-
 dss.Aux.CalculateTimeWeightedAverage <- function(val, ht){
 
   # check the validity of inputs
@@ -1451,8 +1366,6 @@ dss.Aux.CalculateTimeWeightedAverage <- function(val, ht){
   dv <- diff(val)/2; dht <- diff(ht)
 
   return(sum((val_but_last + dv)*dht)/sum(dht))
-
-
 }
 
 # # This function analyzes data for a single patient
@@ -1506,9 +1419,6 @@ dss.Aux.CalculateTimeWeightedAverage <- function(val, ht){
 # we calculate the average value of DSS prior and after this event point.
 dss.Auxiliary.CalculateDSSResponseToTreatment <- function(id, ht, dss, treat, wind){
 
-
-
-  #
   res_list <- list(); numOfEntries = length(ht)
   for(cntP in seq_along(treat)){
     # get current point of interest
@@ -1516,12 +1426,6 @@ dss.Auxiliary.CalculateDSSResponseToTreatment <- function(id, ht, dss, treat, wi
 
     # it's id and ht
     curr_ht = ht[curr_idx]; curr_id = id[curr_idx]
-
-    # find relevant points prior to the current index
-#     iter_bck = curr_idx;
-#     while(ifelse(iter_bck>1, (curr_ht - ht[iter_bck-1] <= wind) & (id[iter_bck-1] == curr_id), FALSE)){
-#       iter_bck = iter_bck -1;
-#     }
 
     # find relevant points after the current index
     iter_fwd = curr_idx;
@@ -1550,14 +1454,12 @@ dss.Auxiliary.CalculateDSSResponseToTreatment <- function(id, ht, dss, treat, wi
 }
 
 
-
 # This function analyzes data for a single patient
 # For every "clean" treatment administration point (no treatments "wind" minutes before
 # and no treatments "wind" minutes after),
 # we calculate the average value of DSS prior and after this event point.
 dss.Auxiliary.CalculateDSSResponseToTreatment.PrePost <- function(id, ht, dss, treat, wind){
 
-  #
   res_list <- list(); numOfEntries = length(ht)
   for(cntP in seq_along(treat)){
     # get current point of interest
@@ -1602,7 +1504,6 @@ dss.Auxiliary.CalculateDSSResponseToTreatment.PrePost <- function(id, ht, dss, t
 }
 
 
-
 # Train the treatment prediction model used for control;
 dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTimeData, dev_ids, valid_ids, test_ids, wind, sepsis_related_cond){
 
@@ -1612,9 +1513,6 @@ dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTim
   }
 
   # classify data entries into positive (treatment within an hour)
-#   pos_examples = (!is.na(treatmentTimeData$timeSinceLastEvent) & treatmentTimeData$timeSinceLastEvent <= 60) |
-#     (!is.na(treatmentTimeData$timeToNextEvent) & treatmentTimeData$timeToNextEvent <= 60) | treatmentTimeData$indicator
-
   pos_examples = (!is.na(treatmentTimeData$timeToNextEvent) & treatmentTimeData$timeToNextEvent <= 60) | treatmentTimeData$indicator == 1
   pos_ex_idx = which(pos_examples == 1 & sepsis_related_cond)
   neg_ex_idx_all = which(pos_examples == 0 & sepsis_related_cond)
@@ -1634,7 +1532,6 @@ dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTim
   # train the predictor on the development set for a variety of regularization values
   lambda_list = logspace(0, -9, 11)
   alpha_list = linspace(0,1,11)
-  #alpha_list = c(0)
   treat_model_list = list();
   t1 <- Sys.time()
   for(cntA in seq_along(alpha_list)){
@@ -1662,10 +1559,7 @@ dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTim
     for(cntL in seq(along = lambda_list)){
       currL = lambda_list[cntL];
       valid_pred <- predict(treat_model_list[[cntA]], dataMat[valid_all_idx, ], s = currL, type = "response")
-      # roc_obj <- roc(valid_labels, as.vector(valid_pred))
-      #AUC_valid[cntA, cntL] <- roc_obj$auc[1]
       AUC_valid[cntA, cntL] <- performance(prediction(valid_pred, valid_labels), "auc")@y.values[[1]]
-      # reporting
       dt <- Sys.time() - t1; units(dt) <- "mins"
       cat("Estimating accuracy of trained treatment models. For cntA = ", cntA,"out of", length(alpha_list), "and CntL =", cntL, "out of", length(lambda_list), "evaluated in",dt, "mins\n")
       t1 <- Sys.time()
@@ -1676,11 +1570,9 @@ dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTim
   best_Alpha = alpha_list[best_ind[1]]
   best_Lambda = lambda_list[best_ind[2]]
   bestModel = treat_model_list[[best_ind[1]]]
-  #  bestModel$beta[,best_ind[2]]
 
   # will be returned
   treatmentModelData = list(best_AUC = best_AUC, best_Alpha = best_Alpha, best_Lambda = best_Lambda, bestModel = bestModel)
-
 
   # predict treatment probability for all entries.
   treat_prob <- predict(bestModel, dataMat, s =  best_Lambda, type = "response")
@@ -1708,10 +1600,7 @@ dss.ResponseToTreatment.Preliminary <- function(icustayID, dataMat, treatmentTim
   #
   retObj <- list(treatmentModelData = treatmentModelData, treat_ex_idx = pos_idxs_untilSS, baseline_ex_idx = baseline_idxs_untilSS_subsample,
                  baseline_idx_all = baseline_idxs_untilSS)
-  # treatmentResponseAnalysisObj <- retObj
-
   retObj
-
 }
 
 
@@ -1737,7 +1626,6 @@ dss.PerformanceAnalysis.AnalyzeTreatmentResponse <- function(icustayID, ht, dssR
   # debugging
   if(0){
     all_positive = which(bolus_indicator == 1)
-    #dssRanks <- truncDataMat_intp$anbp_sys
     dssRanks <- (match(sepsisIndLin$status, c("none", "sirs", "severe", "shock")) -1)
     wind = 12*60
     treat_stat <- dss.Auxiliary.CalculateDSSResponseToTreatment(icustay_id, hosp_time, dssRanks,
@@ -1756,35 +1644,27 @@ dss.PerformanceAnalysis.AnalyzeTreatmentResponse <- function(icustayID, ht, dssR
 #                                                                      treatmentResponseAnalysisObj$baseline_idx_all,
 #                                                                      wind)
 
-  #
   before_cmi = mean(treat_stat$avgBefore)
   after_cmi = mean(treat_stat$avgAfter)
   before_no = mean(baseline_cmi_stat$avgBefore)
   after_no = mean(baseline_cmi_stat$avgAfter)
   delta_cmi = treat_stat$avgAfter - treat_stat$avgBefore
   delta_no = baseline_cmi_stat$avgAfter-baseline_cmi_stat$avgBefore
-  #min_l = min(c(length(delta_cmi), length(delta_no)))
-  #delta_tmp = delta_no[1:min_l] - delta_cmi[1:min_l]
-  #p1 = pnorm( mean(delta_tmp)/(std(delta_tmp)/sqrt(length(delta_tmp))),lower.tail=FALSE)
   p1 = t.test(x = delta_cmi, y = delta_no, alternative = "t")$p.value
   numOfSamples = length(delta_cmi)
   fractionBelowControlMean = mean(delta_cmi <= mean(delta_no))
   ci_fbc = bootstrapCIforAccuracy(delta_cmi <= mean(delta_no))
 
-
   # plot the delta's to a file
   cols = gg_color_hue(2)
   lbl = c(rep(1, length(delta_cmi)), rep(2, length(delta_no)))
   uniq_stages = c("Treated", "Control")
-#   plot_df = data.frame(scores = c(delta_cmi, delta_no),
-#                        stage = uniq_stages[lbl],
-#                        cols = cols[lbl]);
   stg = uniq_stages[lbl]
-
   plot_df = data.frame(scores = c(delta_cmi, delta_no),
                      stage = factor(stg, level = uniq_stages, ordered = TRUE),
                      cols = cols[lbl]);
   plotTitle = "L-DSS"
+  
   # generate the actual plot
   obj <- ggplot(plot_df, aes(x = scores, fill = stage))
   obj <- obj + geom_density(alpha = 0.1)
@@ -1800,7 +1680,6 @@ dss.PerformanceAnalysis.AnalyzeTreatmentResponse <- function(icustayID, ht, dssR
   pdf(file = fn_plot_treatmentResponse, width = 12, height = 8)
   print(obj)
   dev.off()
-
 
   res_list = list(treat_stat = treat_stat, baseline_cmi_stat = baseline_cmi_stat,
                   before_treat = before_cmi, after_treat = after_cmi,
@@ -1818,8 +1697,6 @@ dss.PerformanceAnalysis.AnalyzeTreatmentResponse <- function(icustayID, ht, dssR
 
   res_list
 }
-
-
 
 
 dss.PerformanceAnalysis.PlotScoreDensityPerStage <- function(
@@ -1850,7 +1727,7 @@ dss.PerformanceAnalysis.PlotScoreDensityPerStage <- function(
                        labels = sevStageToLabelMapping$sevStageLabel)
   obj <- obj + xlab("Value of DSS")
   obj <- obj + ylab("Density of DSS")
-  obj <- obj# + ggtitle(plotTitle)
+  obj <- obj # + ggtitle(plotTitle)
 
   # save the actual plot
   pdf(file = fn_plot_save, width = 10, height = 6)
@@ -1894,7 +1771,7 @@ dss.PerformanceAnalysis.PlotScoreDensityPerStage <- function(
 #   qplot(x = bin_boundaries[2:(length(bin_boundaries)-1)], y = log(oddsRatio[1:(length(oddsRatio)-1)]))
 #
 #
-  # approximation
+#   approximation
 
 #   mean_shock = mean(scores[sevStagePerEntry == 3]); std_shock = std(scores[sevStagePerEntry == 3])
 #   mean_noShock = mean(scores[sevStagePerEntry < 3]);
@@ -1941,8 +1818,6 @@ dss.PerformanceAnalysis.PlotScoreDensityPerStage <- function(
 #   x11(); qplot(x = bin_boundaries, y = log_likelihood_ratio)
 
 }
-
-
 
 
 dss.Aux.PValueOfPairedPositivityTestVsNumberOfSamples <- function(deltaVec, numOfSizePoints, numOfRepetitions = 100, file_name,
@@ -2007,7 +1882,6 @@ dss.Aux.PValueOfPairedPositivityTestVsNumberOfSamples <- function(deltaVec, numO
 }
 
 
-
 dss.Aux.PlotPrecisionRecall <- function(curr_roc_obj, file_name, xmin, xmax){
 
   # data frame for precision/recall/f-measure
@@ -2026,7 +1900,6 @@ dss.Aux.PlotPrecisionRecall <- function(curr_roc_obj, file_name, xmin, xmax){
 
   1
 }
-
 
 
 dss.Aux.PlotSensitivityOneMinusSpecificity <- function(curr_roc_obj, file_name, xmin, xmax){
@@ -2087,7 +1960,6 @@ dss.Aux.SliceGBRT <- function(model_list, numOfTreesPerSlice){
       slice_end = min(c(cntSlice*numOfTreesPerSlice, currNumOfT))
       slice_idxs = slice_st:slice_end
       #cat("Start = ", slice_st, ", End = ", slice_end, "\n")
-
       cntAll = cntAll + 1
       sliced_models_list[[cntAll]] <- list(a = currModel$a[slice_idxs], t = currModel$t[slice_idxs])
       bm_model[cntAll] <- cntM;
@@ -2101,8 +1973,6 @@ dss.Aux.SliceGBRT <- function(model_list, numOfTreesPerSlice){
 }
 
 
-#
-#
 dss.Aux.CollectSlices <- function(backwardMapping, fn_modelSlices_template){
 
   # load files
@@ -2140,5 +2010,3 @@ dss.Aux.CollectSlices <- function(backwardMapping, fn_modelSlices_template){
 
   res_list
 }
-
-

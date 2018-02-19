@@ -1,16 +1,13 @@
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-# Move later to a separate file
 #
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-################################################################################################################################
-
+# DSSL Performance Evaluation Functions
+#
+# If you use this code, please cite:
+# Dyagilev, K. and Saria, S., 2016. Learning (predictive) risk scores in the
+# presence of censoring due to interventions. Machine Learning, 102(3),
+# pp.323-348.
+# Dyagilev, K. and Saria, S., 2015. Learning a severity score for sepsis:
+# A novel approach based on clinical comparisons. In AMIA Annual Symposium
+# Proceedings (Vol. 2015, p. 1890). American Medical Informatics Association.
 
 
 # combine data on per-patient basis
@@ -36,7 +33,6 @@ perUserIndicatorCalculation <- function(ids, time_to_e, cens){
   # +1 for positive
   lbl = ifelse(isPos, 1, 0);
   lbl[ isCens & !isPos] = -1;
-
 
   tmp_df <- data.frame(id = uniq_ids, isPos = isPos, isCens = isCens, lbl = lbl)
   tmp_df
@@ -89,7 +85,6 @@ calcTimeToDetection <- function(ids, scores, time_to_event, time_to_organ_failur
   # calculate the maximal score for all users
   maxScores_df <- calcPerUserMaxScore(ids = ids, scores = scores)
 
-
   # get relevant entries
   rel_ids = c(positiveIds, negativeIds)
   rel_lbl = c(rep(1, length(positiveIds)), rep(0, length(negativeIds)))
@@ -133,6 +128,7 @@ calcTimeToDetection <- function(ids, scores, time_to_event, time_to_organ_failur
     th_names[cnt] = sprintf("TruePosTh_%d", cnt_tp_rt)
     th_type[cnt] = "TruePositive"
   }
+  
 
   # calculate thresholds on the score that achieve the desired falsePositiveRate
   for(cnt_fp_rt in seq_along(falsePositiveTh)){
@@ -142,6 +138,7 @@ calcTimeToDetection <- function(ids, scores, time_to_event, time_to_organ_failur
     th_names[cnt] = sprintf("FalsePosTh_%d", cnt_fp_rt)
     th_type[cnt] = "FalsePositive"
   }
+  
 
   # copy the manually defined thresholds
   for(cnt_det_th in seq_along(detectionTh)){
@@ -161,8 +158,10 @@ calcTimeToDetection <- function(ids, scores, time_to_event, time_to_organ_failur
 
   detTime_df_list = list()
   for(cnt_th in seq_along(th_list)){
+    
     # current detection threshold
     th = th_list[cnt_th]
+    
     # 0-1 indicator whether the current score is above the detection threshold
     mult_coeff = ifelse(tmp_df$score >=  th,1,0)
 
@@ -181,8 +180,6 @@ calcTimeToDetection <- function(ids, scores, time_to_event, time_to_organ_failur
     # cannot be NA since we consider only positive patients.
     time2OrganFail = curr_df$orgFail*mult_coeff;
     first_org_fail <- tapply(time2OrganFail, curr_df$ids, FUN = max)
-    # cond_detPriorToOF <- first_org_fail>= 0 & cond_detPriorSS
-
     detTime_df_list[[cnt_th]] = data.frame(uniqId = as.numeric(names(time_between_detection_and_septic_shock)[cond_detPriorSS]),
                                            detectionTime = time_between_detection_and_septic_shock[cond_detPriorSS],
                                            detToOrgFailTime = first_org_fail[cond_detPriorSS])

@@ -1,3 +1,15 @@
+#
+# Library of Additional DSSL Functions (not pertaining to model training)
+#
+# If you use this code, please cite:
+# Dyagilev, K. and Saria, S., 2016. Learning (predictive) risk scores in the
+# presence of censoring due to interventions. Machine Learning, 102(3),
+# pp.323-348.
+# Dyagilev, K. and Saria, S., 2015. Learning a severity score for sepsis:
+# A novel approach based on clinical comparisons. In AMIA Annual Symposium
+# Proceedings (Vol. 2015, p. 1890). American Medical Informatics Association.
+
+
 # Input argument:
 # * (id, ht) - patient id and hospital time.
 # * event - binary indicator if the current entry is the event of interest
@@ -82,7 +94,6 @@ dss.Auxiliary.CalculateTimeSinceAndToEvent <- function(id, ht, event){
 }
 
 
-
 # counts the number of NA entries in the object
 na.cnt <- function(obj){
   sum(is.na(obj))
@@ -99,8 +110,6 @@ mysample <- function(vec, num, replace = FALSE){
 }
 
 
-
-
 bootstrapCIforAccuracy <- function(isCorrect){
   #x <- c(rep(1,1000), rep(0,1000))
   #b <- boot(x, function(u,i) mean(u[i]), R = 2000)
@@ -108,7 +117,6 @@ bootstrapCIforAccuracy <- function(isCorrect){
   ci <- boot.ci(b, type = c("basic"))
   ci
 }
-
 
 
 calculateCenteringAndRescalingDataForMatrix <- function(dataMat){
@@ -139,6 +147,7 @@ centerAndRescaleMatrix <- function(dataMat, centeringCoeff){
   # return the result
   dataMat_centered
 }
+
 
 # swap entries of two vectors based on 0-1 indicator "ifswap"
 vector_swap <- function(vec1, vec2, ifswap){
@@ -181,7 +190,6 @@ createRandomPairsOrderedByRank <- function(rankVec, numOfPairs){
   }
 
   orderingPairs
-
 }
 
 
@@ -190,7 +198,6 @@ gg_color_hue<- function(n) {
   hues=seq(15,375,length=n+1)
   hcl(h=hues,l=65,c=100)[1:n]
 }
-
 
 
 # translate into binary vectors
@@ -225,9 +232,7 @@ aux.DecimalVecToBinMatrix <- function(decVec, numOfClasses){
 
   # return the value
   resMat
-
 }
-
 
 
 energyOfVector.total <- function(vec){
@@ -270,6 +275,7 @@ union.list <- function(set_list){
   curr_res
 }
 
+
 union.all <- function(...){
   input_args <- list(...)
   union.list(input_args)
@@ -280,9 +286,6 @@ union.all <- function(...){
 vector.getFirstValue <- function(vec){
   vec[1]
 }
-
-
-
 
 
 # Function mimic.SampleAndHoldPropagation.WithExpiration(id, ht, vec, valid_time)
@@ -326,10 +329,7 @@ mimic.SampleAndHoldPropagation.WithExpiration <- function(id, ht, vec, valid_tim
   res_list = list(locf = copy_vec, timeSinceLastSample = time_since_last_sample,
                   locf_withExpir = vec_with_expiration)
   res_list
-
 }
-
-
 
 
 # Calculate instantaneuous conditions for SIRS.
@@ -361,8 +361,6 @@ mimic.CalculateInstantaneuousSIRSConditions <- function(temperature, hr, resp_ra
   #tmp_cond[is.na(temp_cond)] = 0;
   sirs_raw_cond = (rowSums(tmp_cond, na.rm = TRUE) >=2)
 
-
-
   # find entries where we have all the information but none of the conditions holds
   none_holds_cond = (temp_cond == FALSE) & (hr_cond == FALSE) & (rr_cond == FALSE) &
     (paco2_cond == FALSE | is.na(paco2_cond)) & (wbc_cond == FALSE | is.na(wbc_cond))
@@ -374,10 +372,6 @@ mimic.CalculateInstantaneuousSIRSConditions <- function(temperature, hr, resp_ra
 
   res_list
 }
-
-
-
-
 
 
 # Function mimic.RemoveShortOnIntervals
@@ -402,7 +396,6 @@ mimic.RemoveShortOnIntervals <- function(id, ht, vec, timeTh){
     currT = ht[cntR];
     currVal = sig_raw[cntR];
     is_last = is_last_user_entry[cntR];
-
 
     # rising edge
     if(currVal == 1 & prevVal <= 0){
@@ -429,7 +422,6 @@ mimic.RemoveShortOnIntervals <- function(id, ht, vec, timeTh){
       }
     }
 
-
     # make sure to update all the runners
     if(is_last == 1){
       prevVal = -1; prevT = -timeTh - 1;
@@ -454,7 +446,6 @@ mimic.RemoveShortOnIntervals <- function(id, ht, vec, timeTh){
 #
 # Output arguments:
 # * a vector of processed value
-
 mimic.UniteAdjacentOnIntervals <- function(id, ht, vec, unionTh){
 
   # compatibility transformations
@@ -500,9 +491,7 @@ mimic.UniteAdjacentOnIntervals <- function(id, ht, vec, unionTh){
   }
 
   sig_raw
-
 }
-
 
 
 mimic.TranslateLogicalVectorToZeroOne <- function(vec){
@@ -510,7 +499,6 @@ mimic.TranslateLogicalVectorToZeroOne <- function(vec){
   res_vec[res_vec == TRUE] = 1; res_vec[res_vec == FALSE] = 0;
   res_vec
 }
-
 
 
 mimic.CoarseGradingSurroundedBySameStatus <-
@@ -525,8 +513,7 @@ mimic.CoarseGradingSurroundedBySameStatus <-
 
     res_list <- list(timeToData = timeToData, status_safe = status_safe)
     res_list
-  }
-
+}
 
 
 mimic.getSampleAndHoldSepsisStageMarkers <- function(dataMat){
@@ -559,10 +546,7 @@ mimic.getSampleAndHoldSepsisStageMarkers <- function(dataMat){
                     sirs_hr_oor_sh = sirs_hr_oor_sh, sirs_resp_oor_sh = sirs_resp_oor_sh, sirs_wbc_oor_sh = sirs_wbc_oor_sh,
                     sepsis_note = sepsis_note, angus_infection = angus_infection, time_to_ss = time_to_ss);
   res
-
 }
-
-
 
 
 # function written by Peter Schulam
@@ -585,13 +569,10 @@ mimic.highest_status <- function(sirs, severe, shock) {
 }
 
 
-
 mimic.dropDFColumnsByListOfNames <- function (df, killList){
   df_new <- df[,!(names(df) %in% killList)];
   df_new
 }
-
-
 
 
 # this function calculates defaults for different features
@@ -628,10 +609,10 @@ mimic.calculateFeatureDefaults <- function(dataMat){
   correctionsToPopMed["worst_sofa"] <- 0;
 
   corrFeatNames <- names(correctionsToPopMed);
-  # cnt = 1
   for(cnt in seq(along = correctionsToPopMed)){
     featName <- corrFeatNames[[cnt]];
     correctVal <- correctionsToPopMed[[cnt]];
+    
     # if the feature exists in the current population median table
     if(featName %in% names(populationMedian)){
       populationMedian[[featName]] <- correctVal;
@@ -647,9 +628,8 @@ mimic.calculateFeatureDefaults <- function(dataMat){
 }
 
 
-
-
 mimic.aux.linear_approx <- function(x,y){
+  
   # get the number of elements
   lngth = length(x);
 
@@ -707,7 +687,6 @@ mimic.singlePatientLinearInterpolation <- function(x, y, defVal){
     return(res);
   }
 
-
   # make sure the last element is non NA
   if(is.na(tail(y, n=1))){
     last_nonNA_val = y[nonNA_idx[length(nonNA_idx)]]
@@ -724,27 +703,19 @@ mimic.singlePatientLinearInterpolation <- function(x, y, defVal){
   cond = !is.na(y);
   na_idx = which(!cond);
   not_na_idx = which(cond);
-
-  #out <- approx(x = x[not_na_idx], y = y[not_na_idx], xout = hosp_time[na_idx] , method = "linear")
-  #y_padded <- y; y_padded[na_idx] = out$y;
-
   y_padded <- mimic.aux.linear_approx(x, y);
-
   y_padded
-
 }
 
 
 mimic.singlePatientSampleAndHoldInterpolation <- function(vec, defVal){
 
-  #
   if(is.na(vec[1])){
     vec[1] = defVal;
   }
   vec_padded <- na.locf(vec)
   vec_padded
 }
-
 
 
 mimic.sampleUniquePairs.withReplacement <- function(vec1, vec2, numOfPairs){

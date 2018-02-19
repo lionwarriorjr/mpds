@@ -1,21 +1,12 @@
 # mpds
-Mobile Parkinson Disease Score
+Source Code for Learning the Mobile Parkinson Disease Score (mPDS)
 
 ## feature_extraction
-This folder contains the Matlab feature library to extract Parkinson disease related features from raw data samples collected from HopkinsPD Android Application.
+This folder contains the Matlab feature library used to extract the relevant smartphone sensor features including but not limited to measurements from the accelerometer, in addition to those related to audio and screen touch. See paper "High Frequency Remote Monitoring of Parkinson's Disease via Smartphone: Platform Overview and Medication Response Detection" (at https://arxiv.org/abs/1601.00960) for more detail. 
 
-## data_preparation
-This folder contains the Jupyter Notebook to load feature files into a Postgres database called HopkinsPD. The tables in HopkinsPD database will be served for mPDS training.
+## mPDS
+This folder contains the Jupyter Notebook used to learn the mPDS in our accompanying paper using smartphone based dataset derived from the feature extraction library above and DSSL, a ranked based machine learning framework described in "Learning (Predictive) Risk Scores in the Presence of Censoring due to Interventions." See the associated paper at https://arxiv.org/abs/1507.07295 for more detail. Included as well is a pair of useful visualization tools (in subfolder visualization tools) used to generate the learned severity trajectories as well as more easily visualize the features DSSL weights as most influential in the learning procedure.
 
 ## dssl
-This folder contains the R source code of DSSL (Disease Severity Score Learning) and the Jupyter Notebook script to train the mPDS model using DSSL.
+This folder contains the R source code for DSSL (Disease Severity Score Learning) in addition to a Jupyter Notebook script that walks through an end-to-end example of learning mPDS scores using DSSL.
 
-## analysis
-This folder contains the R scripts used to generate results for each major component of the paper.
-Specifically, one script is used for preprocessing of learned mPDS scores for the cross-sectional
-analysis, another IPython notebook carries out the cross-sectional analysis, another generates
-visualizations of the mPDS trajectories in the development cohort, while another computes
-the relevant summary statistics reported in the main text.
-
-## data
-This folder contains the relevant data files referenced in the analysis.
