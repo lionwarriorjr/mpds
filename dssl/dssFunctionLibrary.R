@@ -23,7 +23,6 @@
 # Lambda0_list and LambdaS_list specify DSSL's regularization parameters (scalar constants)
 # If using K-fold validation for training, should consider varying Lambda0_list/LambdaS_list by grid search
 
-
 library(pracma)
 library(glmnet)
 library(dplyr)
